@@ -27,6 +27,8 @@ flowchart TD
   F --> G[Render UI (cards) + toast]
 ```
 
+---
+
 ## Notas de calidad
 
 UI dark moderna, accesible (focus visible + aria-live).
