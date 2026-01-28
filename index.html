@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <!-- =========================================================
+       Ghibli Films Inspector (API REST)
+       - Vanilla JS (ES6+)
+       - 4 botones de vistas (según enunciado)
+       - Cache: fetch solo la primera vez, luego local
+       - UI dark “filete” + accesible + sin dependencias
+       Créditos: Rockwell Harrison Hernández
+  ========================================================== -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Consumo de API REST Studio Ghibli con cache local y vistas por botones."
+    />
+    <title>Ghibli Films Inspector — API REST</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body>
+    <!-- Skip link: accesibilidad para teclado -->
+    <a class="skip" href="#main">Saltar al contenido</a>
+
+    <!-- =========================================================
+       HERO: fondo atmosférico (sin imagen externa) + overlay
+  ========================================================== -->
+    <header class="hero" aria-label="Encabezado">
+      <!-- Fondo decorativo (solo CSS) -->
+      <div class="hero__bg" aria-hidden="true"></div>
+      <!-- Velo para contraste (gradiente + oscurecimiento) -->
+      <div class="hero__veil" aria-hidden="true"></div>
+
+      <!-- Contenido del hero -->
+      <div class="wrap hero__content">
+        <div class="hero__brand">
+          <span class="sig" aria-hidden="true"></span>
+          <div>
+            <p class="hero__kicker">API REST · Cache local · Vanilla ES6+</p>
+            <h1 class="hero__title">Ghibli Films Inspector</h1>
+            <p class="hero__sub">
+              Carga una sola vez la lista de películas y explora vistas rápidas
+              con botones. (Consola incluida, como pide el ejercicio.)
+            </p>
+          </div>
+        </div>
+
+        <!-- HUD: estado, fuente (API/CACHE), cantidad, última carga -->
+        <section
+          class="hud"
+          aria-label="Estado general"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <span class="pill" id="statusPill">Listo</span>
+          <span class="pill pill--ghost" id="sourcePill">Fuente: —</span>
+          <span class="pill pill--ghost" id="countPill">Películas: —</span>
+          <span class="pill pill--ghost" id="timePill">Cargado: —</span>
+        </section>
+      </div>
+    </header>
+
+    <!-- =========================================================
+       MAIN: panel acciones + resultados
+  ========================================================== -->
+    <main id="main" class="wrap">
+      <!-- Layout: 2 columnas en desktop -->
+      <section class="layout" aria-label="Aplicación">
+        <!-- =======================
+           Panel de acciones
+      ======================== -->
+        <aside class="panel" aria-label="Acciones">
+          <header class="panel__head">
+            <h2 class="panel__title">Vistas (botones del enunciado)</h2>
+            <p class="panel__desc">
+              Cada botón imprime en consola lo solicitado y también lo muestra
+              aquí. La lista se descarga solo la primera vez (cache).
+            </p>
+          </header>
+
+          <!-- Botonera principal -->
+          <div class="btns" role="group" aria-label="Botones de vistas">
+            <button class="btn btn--primary" type="button" data-view="director">
+              Títulos + Director
+            </button>
+            <button class="btn" type="button" data-view="year">
+              Título + Año
+            </button>
+            <button class="btn" type="button" data-view="description">
+              Título + Descripción
+            </button>
+            <button class="btn" type="button" data-view="id">IDs</button>
+          </div>
+
+          <!-- Acciones secundarias -->
+          <div
+            class="btns btns--secondary"
+            role="group"
+            aria-label="Acciones secundarias"
+          >
+            <button class="btn btn--ghost" type="button" id="btnResetView">
+              Reiniciar vista
+            </button>
+            <button class="btn btn--ghost" type="button" id="btnResetAll">
+              Reiniciar todo
+            </button>
+            <button
+              class="btn btn--danger"
+              type="button"
+              id="btnForceReload"
+              title="Opcional: vuelve a consultar API"
+            >
+              Forzar recarga
+            </button>
+          </div>
+
+          <!-- Loader: visible durante fetch -->
+          <div class="loader" id="loader" hidden aria-label="Cargando">
+            <div class="loader__row">
+              <span class="loader__dot" aria-hidden="true"></span>
+              <p class="loader__txt" id="loaderText">Cargando…</p>
+            </div>
+            <div class="meter" aria-hidden="true">
+              <div class="meter__bar" id="meterBar"></div>
+            </div>
+            <p class="hint">
+              Tip: si ya cargaste una vez, los botones usan cache y es
+              instantáneo.
+            </p>
+          </div>
+
+          <!-- Mensajes / guía -->
+          <div class="note" aria-label="Ayuda rápida">
+            <p class="note__k">Checklist</p>
+            <ul class="note__list">
+              <li>Abre consola (F12) para ver los listados.</li>
+              <li>Primer click: API. Luego: CACHE.</li>
+              <li>“Forzar recarga” solo para pruebas (opcional).</li>
+            </ul>
+          </div>
+        <!-- =======================
+           Resultados (tarjetas)
+        ======================== -->
+        <section class="results" aria-label="Resultados">
+          <header class="results__head">
+            <h2 class="results__title" id="viewTitle">Salida</h2>
+            <p class="results__desc" id="viewDesc">
+              Presiona un botón para listar resultados.
+            </p>
+          </header>
+
+          <!-- Contenedor grid para las tarjetas -->
+          <div class="cards" id="cards">
+            <!-- Se llena dinámicamente -->
+          </div>
+
+          <!-- Caja de error (oculta por defecto) -->
+          <div class="errorBox" id="errorBox" hidden>
+            <p class="errorBox__title">Huy, algo salió mal</p>
+            <p class="errorBox__desc" id="errorMsg">—</p>
+            <button class="btn btn--primary" type="button" id="btnRetry">
+              Intentar de nuevo
+            </button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <!-- Footer opcional -->
+    <footer class="foot wrap">
+      <div class="foot__inner">
+        <p class="foot__line">
+          <strong>Ghibli Films Inspector</strong> · <span class="foot__muted">Desafío API REST</span>
+        </p>
+        <p class="foot__line foot__muted">
+          Rockwell Harrison Hernández · 2026
+        </p>
+      </div>
+    </footer>
+
+    <!-- Contenedor de Toasts (Notificaciones) -->
+    <div class="toasts" id="toasts"></div>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
